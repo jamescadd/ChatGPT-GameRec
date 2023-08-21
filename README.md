@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 Replace values from the template with your actual values:
 
-- YouTube Transcript API Key
+- YouTube Data API v3 Key
 
 ## Execution
 

@@ -16,18 +16,19 @@ def get_channel_videos(config):
     playlist_id = res['items'][0]['contentDetails']['relatedPlaylists']['uploads']
     videos = []
     next_page_token = None
+    loop = True
  
-    while 1:
+    while loop:
         res = youtube.playlistItems().list(playlistId=playlist_id,
                                            part='snippet',
                                            maxResults=50,
                                            pageToken=next_page_token).execute()
         videos += res['items']
         next_page_token = res.get('nextPageToken')
- 
+
         if next_page_token is None:
-            break
- 
+            loop = False
+
     return videos
 
 
