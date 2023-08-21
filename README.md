@@ -21,4 +21,7 @@ Replace values from the template with your actual values:
 
 ## Execution
 
-`python main.py`
+`python main.py -c config.json`
+
+Run `python main.py -h` for more info and options.
+

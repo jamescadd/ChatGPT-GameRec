@@ -1,5 +1,6 @@
 # https://www.pragnakalp.com/automate-youtube-video-transcription-python/
 
+import argparse
 import json
 
 from apiclient.discovery import build
@@ -32,8 +33,8 @@ def get_channel_videos(config):
     return videos
 
 
-def main():
-    with open("config.json") as f:
+def main(args_):
+    with open(args_.config) as f:
         config = json.load(f)
 
     videos = get_channel_videos(config['youtube'])
@@ -54,4 +55,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='ChatGPT GameRec')
+    parser.add_argument('-c', '--config', metavar='config', type=str,
+                        help='JSON config file', default='config.json')
+    args = parser.parse_args()
+    main(args)
