@@ -1,17 +1,17 @@
 # https://www.pragnakalp.com/automate-youtube-video-transcription-python/
 
+import json
+
 from apiclient.discovery import build
 from youtube_transcript_api import YouTubeTranscriptApi
  
-api_key = ""  # replace it with your API key
-channel_id = 'UChivF4Th30mhk2e3pGLY6_w'  # Lu's Retro Source
-youtube = build('youtube', 'v3', developerKey=api_key)
 
+def get_channel_videos(config):
 
-def get_channel_videos(channel_id_):
- 
+    youtube = build('youtube', 'v3', developerKey=config.get('api_key'))
+
     # get Uploads playlist id
-    res = youtube.channels().list(id=channel_id_,
+    res = youtube.channels().list(id=config.get('channel_id'),
                                   part='contentDetails').execute()
     playlist_id = res['items'][0]['contentDetails']['relatedPlaylists']['uploads']
     videos = []
@@ -32,7 +32,10 @@ def get_channel_videos(channel_id_):
 
 
 def main():
-    videos = get_channel_videos(channel_id)
+    with open("config.json") as f:
+        config = json.load(f)
+
+    videos = get_channel_videos(config['youtube'])
     video_ids = []  # list of all video_id of channel
 
     for video in videos:
