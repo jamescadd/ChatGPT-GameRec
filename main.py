@@ -9,6 +9,7 @@ from apiclient.discovery import build
 import langchain
 import openai
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError
  
 
 def get_channel_videos(config):
@@ -59,7 +60,7 @@ def main(args_):
                 url = f"https://www.youtube.com/watch?v={video_id}"
                 captions = [response['text'] for response in responses]
                 output_json.append({"url": url, "captions": captions})
-            except Exception as e:
+            except TranscriptsDisabledError as e:
                 print(e)
             finally:
                 bar()
