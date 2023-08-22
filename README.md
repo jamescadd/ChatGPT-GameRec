@@ -21,7 +21,6 @@ Replace values from the template with your actual values:
 
 ## Execution
 
-`python main.py -c config.json`
+`python main.py -c config.json -o output_transcripts.json`
 
 Run `python main.py -h` for more info and options.
-

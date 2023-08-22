@@ -38,20 +38,12 @@ def get_channel_videos(config):
     return videos
 
 
-def main(args_):
-
-    with open(args_.config) as f:
-        config = json.load(f)
-
-    # set OPENAI_API_KEY env variable for langchain
-    os.putenv("OPENAI_API_KEY", config.get("openai").get("api_key"))
-
-    videos = get_channel_videos(config.get('youtube'))
+def get_captions_from_videos(videos, channel_id):
     video_ids = [video['snippet']['resourceId']['videoId'] for video in videos]  # list of all video_id of channel
 
-    print(f"Extracting {len(video_ids)} transcripts from channel ID {config.get('youtube').get('channel_id')}")
+    print(f"Extracting {len(video_ids)} transcripts from channel ID {channel_id}")
 
-    with alive_bar(len(video_ids)) as bar, open(args.output_transcripts, 'w') as o:
+    with alive_bar(len(video_ids)) as bar:
         output_json = []
 
         for video_id in video_ids:
@@ -65,6 +57,21 @@ def main(args_):
             finally:
                 bar()
 
+    return output_json
+
+
+def main(args_):
+
+    with open(args_.config) as f:
+        config = json.load(f)
+
+    # set OPENAI_API_KEY env variable for langchain
+    os.putenv("OPENAI_API_KEY", config.get("openai").get("api_key"))
+
+    videos = get_channel_videos(config.get('youtube'))
+    output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
+
+    with open(args.output_transcripts, 'w') as o:
         json.dump(output_json, o, indent=2)
 
 
