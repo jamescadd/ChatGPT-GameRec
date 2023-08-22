@@ -1,2 +1,4 @@
 google-api-python-client
+langchain
+openai
 youtube-transcript-api

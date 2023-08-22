@@ -2,8 +2,11 @@
 
 import argparse
 import json
+import os
 
 from apiclient.discovery import build
+import langchain
+import openai
 from youtube_transcript_api import YouTubeTranscriptApi
  
 
@@ -34,8 +37,12 @@ def get_channel_videos(config):
 
 
 def main(args_):
+
     with open(args_.config) as f:
         config = json.load(f)
+
+    # set OPENAI_API_KEY env variable for langchain
+    os.putenv("OPENAI_API_KEY", config.get("openai").get("api_key"))
 
     videos = get_channel_videos(config['youtube'])
     video_ids = []  # list of all video_id of channel

@@ -3,5 +3,8 @@
     "api_key": "your_api_key",
     "channel_id": "UChivF4Th30mhk2e3pGLY6_w",
     "channel_id_comment": "Lu's Retro Source"
+  },
+  "openai": {
+    "api_key": "your_api_key"
   }
 }
