@@ -1,3 +1,4 @@
+alive-progress
 google-api-python-client
 langchain
 openai
