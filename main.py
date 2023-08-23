@@ -3,14 +3,22 @@
 import argparse
 import json
 import os
+from random import random
 
 from alive_progress import alive_bar
 from apiclient.discovery import build
-import langchain
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage
+)
 import openai
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError
- 
+
+from video import Video
+
 
 def get_channel_videos(config):
 
@@ -60,26 +68,68 @@ def get_captions_from_videos(videos, channel_id):
     return output_json
 
 
+def get_transcript_summary(transcript):
+    """
+    Get an LLM-generated summary given a video transcript
+    """
+    chat = ChatOpenAI()
+
+    messages = [
+        SystemMessage(content="You are an assistant that provides summaries of video game reviews given a transcript "
+                              "of a video review for a particular video game."),
+        HumanMessage(content=f"Video game review transcript: {transcript}")
+    ]
+
+    ai_message = chat(messages)
+
+    return ai_message.content
+
+
 def main(args_):
 
     with open(args_.config) as f:
         config = json.load(f)
 
     # set OPENAI_API_KEY env variable for langchain
-    os.putenv("OPENAI_API_KEY", config.get("openai").get("api_key"))
+    os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
 
-    videos = get_channel_videos(config.get('youtube'))
-    output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
+    assert args.load_transcripts != args.extract_transcripts, "Must either load or extract transcripts, but not both"
 
-    with open(args.output_transcripts, 'w') as o:
-        json.dump(output_json, o, indent=2)
+    if args.extract_transcripts:
+        videos = get_channel_videos(config.get('youtube'))
+        output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
+
+        with open(args.transcripts_file, 'w') as o:
+            json.dump(output_json, o, indent=2)
+
+    if args.load_transcripts:
+        with open(args.transcripts_file) as i:
+            transcripts = json.load(i)
+
+        videos = []
+
+        for transcript in transcripts:
+            videos.append(Video(transcript['url'], transcript['captions']))
+
+        # demo; get summary from one random video
+        output = get_transcript_summary(videos[int(random() * len(videos))].get_transcription())
+        print(f"LLM-generated summary:\n\n{output}")
+
+    if 'OPENAI_API_KEY' in os.environ:
+        os.environ.pop('OPENAI_API_KEY')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ChatGPT GameRec')
     parser.add_argument('-c', '--config', metavar='config', type=str,
                         help='JSON config file', default='config.json')
-    parser.add_argument('-ot', '--output-transcripts', metavar='output_transcripts', type=str,
-                        help='JSON output file for video transcripts', default='output_transcripts.json')
+    parser.add_argument('-lt', '--load-transcripts', type=bool, metavar='load_transcripts',
+                        help='whether to load previously-extracted transcripts from JSON file',
+                        default=True)
+    parser.add_argument('-et', '--extract-transcripts', metavar='extract_transcripts', type=bool,
+                        help='whether to extract transcripts for videos from channel ID given in config',
+                        default=False)
+    parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
+                        help='JSON file containing video transcripts', default='transcripts.json')
     args = parser.parse_args()
     main(args)
