@@ -11,6 +11,13 @@ source env/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+On Windows `cmd` or PowerShell, instead of using the `source` command above to activate the virtual environment, use:
+
+```bash
+env\Scripts\activate.bat
+```
+
 ### Config
 
 `cp config.template.json config.json`
@@ -21,6 +28,16 @@ Replace values from the template with your actual values:
 
 ## Execution
 
-`python main.py -c config.json -o output_transcripts.json`
-
 Run `python main.py -h` for more info and options.
+
+### Extract Transcripts
+
+If running for the first time, extract transcripts to a `.json` file:
+
+`python main.py -c config.json -tf transcripts.json -et True -lt False`
+
+### Load Transcripts from File
+
+To load transcripts and get summaries from LLM, run:
+
+`python main.py -c config.json -tf transcripts.json -lt True`
