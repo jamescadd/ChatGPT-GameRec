@@ -8,11 +8,14 @@ from random import random
 from alive_progress import alive_bar
 from apiclient.discovery import build
 from langchain.chat_models import ChatOpenAI
+from langchain.document_loaders import JSONLoader
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema import (
     AIMessage,
     HumanMessage,
     SystemMessage
 )
+from langchain.vectorstores import FAISS
 import openai
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError
@@ -85,35 +88,68 @@ def get_transcript_summary(transcript):
     return ai_message.content
 
 
-def main(args_):
+def summary_demo():
+    with open(args.transcripts_file) as i:
+        transcripts = json.load(i)
 
-    with open(args_.config) as f:
+    videos = []
+
+    for transcript in transcripts:
+        videos.append(Video(transcript['url'], transcript['captions']))
+
+    output = get_transcript_summary(videos[int(random() * len(videos))].get_transcription())
+    print(f"LLM-generated summary:\n\n{output}")
+
+
+def extract_transcripts(config):
+    """
+    Extract transcripts and save to JSON file
+    """
+    videos = get_channel_videos(config.get('youtube'))
+    output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
+
+    with open(args.transcripts_file, 'w') as o:
+        json.dump(output_json, o, indent=2)
+
+
+def create_and_save_faiss_embeddings():
+    embeddings = OpenAIEmbeddings(chunk_size=1)
+
+    loader = JSONLoader(
+        file_path=args.transcripts_file,
+        text_content=False,
+        jq_schema='.[].captions')
+
+    pages = loader.load_and_split()
+
+    # Use LangChain to create the embeddings
+    db = FAISS.from_documents(documents=pages, embedding=embeddings)
+
+    # save the embeddings into FAISS vector store
+    db.save_local("faiss_index")
+
+
+def main():
+
+    with open(args.config) as f:
         config = json.load(f)
 
-    # set OPENAI_API_KEY env variable for langchain
+    # set OPENAI_API_KEY env variable for LangChain
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
 
     assert args.load_transcripts != args.extract_transcripts, "Must either load or extract transcripts, but not both"
 
     if args.extract_transcripts:
-        videos = get_channel_videos(config.get('youtube'))
-        output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
-
-        with open(args.transcripts_file, 'w') as o:
-            json.dump(output_json, o, indent=2)
+        extract_transcripts(config)
 
     if args.load_transcripts:
-        with open(args.transcripts_file) as i:
-            transcripts = json.load(i)
+        if args.demo:
+            summary_demo()
+        else:
+            create_and_save_faiss_embeddings()
 
-        videos = []
-
-        for transcript in transcripts:
-            videos.append(Video(transcript['url'], transcript['captions']))
-
-        # demo; get summary from one random video
-        output = get_transcript_summary(videos[int(random() * len(videos))].get_transcription())
-        print(f"LLM-generated summary:\n\n{output}")
+    if args.chat:
+        print("Not yet implemented")
 
     if 'OPENAI_API_KEY' in os.environ:
         os.environ.pop('OPENAI_API_KEY')
@@ -131,5 +167,9 @@ if __name__ == "__main__":
                         default=False)
     parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
                         help='JSON file containing video transcripts', default='transcripts.json')
+    parser.add_argument('-d', '--demo', action='store_true',
+                        help='Simple demo mode: output an LLM-generated summary of one random video', default=False)
+    parser.add_argument('-ch', '--chat', action='store_true',
+                        help='Chat demo mode: chat interactively with transcript demo store', default=False)
     args = parser.parse_args()
-    main(args)
+    main()

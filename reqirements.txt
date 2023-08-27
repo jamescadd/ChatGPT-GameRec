@@ -1,5 +1,8 @@
 alive-progress
+faiss-cpu
 google-api-python-client
+jq
 langchain
 openai
+tiktoken
 youtube-transcript-api
