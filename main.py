@@ -8,8 +8,10 @@ from random import random
 from alive_progress import alive_bar
 from apiclient.discovery import build
 from langchain.chat_models import ChatOpenAI
+from langchain.chains import ConversationalRetrievalChain
 from langchain.document_loaders import JSONLoader
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.prompts import PromptTemplate
 from langchain.schema import (
     AIMessage,
     HumanMessage,
@@ -149,7 +151,44 @@ def main():
             create_and_save_faiss_embeddings()
 
     if args.chat:
-        print("Not yet implemented")
+
+        def ask_question_with_context(qa_, question, chat_history_):
+            query_ = "what is Azure OpenAI Service?"
+            result = qa_({"question": question, "chat_history": chat_history_})
+            print("answer:", result["answer"])
+            chat_history_ = [(query_, result["answer"])]
+            return chat_history_
+
+        llm = ChatOpenAI()
+        embeddings = OpenAIEmbeddings(chunk_size=1)
+
+        # Initialize gpt-35-turbo and our embedding model
+        # load the faiss vector store we saved into memory
+        print("loading FAISS embeddings...")
+        vector_store = FAISS.load_local("./faiss_index", embeddings)
+        print("Done loading embeddings....")
+        # use the faiss vector store we saved to search the local document
+        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+
+        question_prompt = PromptTemplate.from_template("Given the following conversation and a specific request for a "
+                                                       "recommendation, return a suggestion"
+                                                       "\nChat History:"
+                                                       "\n{chat_history}"
+                                                       "\nRecommendation request: {question}"
+                                                       "\nSuggestion:")
+
+        qa = ConversationalRetrievalChain.from_llm(llm=llm,
+                                                   retriever=retriever,
+                                                   condense_question_prompt=question_prompt,
+                                                   return_source_documents=True,
+                                                   verbose=False)
+
+        chat_history = []
+        while True:
+            query = input('you: ')
+            if query == 'q':
+                break
+            chat_history = ask_question_with_context(qa, query, chat_history)
 
     if 'OPENAI_API_KEY' in os.environ:
         os.environ.pop('OPENAI_API_KEY')
