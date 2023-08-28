@@ -25,6 +25,7 @@ env\Scripts\activate.bat
 Replace values from the template with your actual values:
 
 - YouTube Data API v3 Key
+- OpenAI API Key
 
 ## Execution
 
