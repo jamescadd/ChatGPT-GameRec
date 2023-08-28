@@ -36,7 +36,7 @@ Run `python main.py -h` for more info and options.
 `python main.py -m end-to-end`
 
 This extracts transcripts to a `.json` file, creates and saves FAISS
-embeddings to the `faiss_index` directory, then starts an interactive'
+embeddings to the `faiss_index` directory, then starts an interactive
 chat session with the extracted documents.
 
 ### Piecemeal
@@ -44,6 +44,9 @@ chat session with the extracted documents.
 #### Extract Transcripts
 
 `python main.py -m extract-transcipts`
+
+Extracts transcripts to a `.json` file; defaults to `transcripts.json`, specify
+with `-tf` argument.
 
 #### Create Embeddings
 
