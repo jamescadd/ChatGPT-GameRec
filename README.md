@@ -30,14 +30,39 @@ Replace values from the template with your actual values:
 
 Run `python main.py -h` for more info and options.
 
-### Extract Transcripts
+### End-to-End
 
-If running for the first time, extract transcripts to a `.json` file:
+`python main.py -m end-to-end`
 
-`python main.py -c config.json -tf transcripts.json -et True -lt False`
+This extracts transcripts to a `.json` file, creates and saves FAISS
+embeddings to the `faiss_index` directory, then starts an interactive'
+chat session with the extracted documents.
 
-### Load Transcripts from File
+### Piecemeal
 
-To load transcripts and get summaries from LLM, run:
+#### Extract Transcripts
 
-`python main.py -c config.json -tf transcripts.json -lt True`
+`python main.py -m extract-transcipts`
+
+#### Create Embeddings
+
+`python main.py -m create-embeddings`
+
+A `.json` file with extracted transcripts must exist to create embeddings;
+specify with `-tf`, defaults to `transcripts.json`.
+
+#### Summary Demo
+
+Get an LLM-generated summary of one random video.
+
+`python main.py -m summary-demo`
+
+A `.json` file with extracted transcripts must exist to run the summary demo;
+specify with `-tf`, defaults to `transcripts.json`.
+
+#### Chat Demo
+
+`python main.py -m chat-demo`
+
+FAISS embeddings must have already been extracted and placed in the
+`faiss_index` directory.

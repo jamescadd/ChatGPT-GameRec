@@ -20,7 +20,7 @@ from langchain.schema import (
 from langchain.vectorstores import FAISS
 import openai
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError
+from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
 from video import Video
 
@@ -65,7 +65,7 @@ def get_captions_from_videos(videos, channel_id):
                 url = f"https://www.youtube.com/watch?v={video_id}"
                 captions = [response['text'] for response in responses]
                 output_json.append({"url": url, "captions": captions})
-            except TranscriptsDisabledError as e:
+            except (TranscriptsDisabledError, NoTranscriptFound) as e:
                 print(e)
             finally:
                 bar()
@@ -122,13 +122,63 @@ def create_and_save_faiss_embeddings():
         text_content=False,
         jq_schema='.[].captions')
 
-    pages = loader.load_and_split()
+    print("Creating and saving FAISS embeddings...")
 
-    # Use LangChain to create the embeddings
-    db = FAISS.from_documents(documents=pages, embedding=embeddings)
+    with alive_bar(1) as bar:
 
-    # save the embeddings into FAISS vector store
-    db.save_local("faiss_index")
+        pages = loader.load_and_split()
+
+        # Use LangChain to create the embeddings
+        db = FAISS.from_documents(documents=pages, embedding=embeddings)
+
+        # save the embeddings into FAISS vector store
+        db.save_local("faiss_index")
+
+        bar()
+
+
+def chat():
+    assert os.path.exists('faiss_index')
+
+    def ask_question_with_context(qa_, question, chat_history_):
+        query_ = "What games do you recommend?"
+        result = qa_({"question": question, "chat_history": chat_history_})
+        print("answer:", result["answer"])
+        chat_history_ = [(query_, result["answer"])]
+        return chat_history_
+
+    llm = ChatOpenAI()
+    embeddings = OpenAIEmbeddings(chunk_size=1)
+
+    # Initialize gpt-35-turbo and our embedding model
+    # load the faiss vector store we saved into memory
+    print("loading FAISS embeddings...")
+    vector_store = FAISS.load_local("./faiss_index", embeddings)
+    print("Done loading embeddings....")
+    # use the faiss vector store we saved to search the local document
+    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+
+    question_prompt = PromptTemplate.from_template("Given the following conversation and a specific request for a "
+                                                   "recommendation, return a suggestion"
+                                                   "\nChat History:"
+                                                   "\n{chat_history}"
+                                                   "\nRecommendation request: {question}"
+                                                   "\nSuggestion:")
+
+    qa = ConversationalRetrievalChain.from_llm(llm=llm,
+                                               retriever=retriever,
+                                               condense_question_prompt=question_prompt,
+                                               return_source_documents=True,
+                                               verbose=False)
+
+    chat_history = []
+    continue_chat = True
+    while continue_chat:
+        query = input('you ("q" or "quit" to quit): ')
+        if query.lower() in ['q', 'quit']:
+            continue_chat = False
+        if continue_chat:
+            chat_history = ask_question_with_context(qa, query, chat_history)
 
 
 def main():
@@ -139,56 +189,24 @@ def main():
     # set OPENAI_API_KEY env variable for LangChain
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
 
-    assert args.load_transcripts != args.extract_transcripts, "Must either load or extract transcripts, but not both"
-
-    if args.extract_transcripts:
+    if args.mode == "extract-transcripts":
         extract_transcripts(config)
 
-    if args.load_transcripts:
-        if args.demo:
-            summary_demo()
-        else:
-            create_and_save_faiss_embeddings()
+    if args.mode == 'summary-demo':
+        assert os.path.exists(args.transcripts_file)
+        summary_demo()
 
-    if args.chat:
+    if args.mode == 'create-embeddings':
+        assert os.path.exists(args.transcripts_file)
+        create_and_save_faiss_embeddings()
 
-        def ask_question_with_context(qa_, question, chat_history_):
-            query_ = "what is Azure OpenAI Service?"
-            result = qa_({"question": question, "chat_history": chat_history_})
-            print("answer:", result["answer"])
-            chat_history_ = [(query_, result["answer"])]
-            return chat_history_
+    if args.mode == "chat-demo":
+        chat()
 
-        llm = ChatOpenAI()
-        embeddings = OpenAIEmbeddings(chunk_size=1)
-
-        # Initialize gpt-35-turbo and our embedding model
-        # load the faiss vector store we saved into memory
-        print("loading FAISS embeddings...")
-        vector_store = FAISS.load_local("./faiss_index", embeddings)
-        print("Done loading embeddings....")
-        # use the faiss vector store we saved to search the local document
-        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
-
-        question_prompt = PromptTemplate.from_template("Given the following conversation and a specific request for a "
-                                                       "recommendation, return a suggestion"
-                                                       "\nChat History:"
-                                                       "\n{chat_history}"
-                                                       "\nRecommendation request: {question}"
-                                                       "\nSuggestion:")
-
-        qa = ConversationalRetrievalChain.from_llm(llm=llm,
-                                                   retriever=retriever,
-                                                   condense_question_prompt=question_prompt,
-                                                   return_source_documents=True,
-                                                   verbose=False)
-
-        chat_history = []
-        while True:
-            query = input('you: ')
-            if query == 'q':
-                break
-            chat_history = ask_question_with_context(qa, query, chat_history)
+    if args.mode == 'end-to-end':
+        extract_transcripts(config)
+        create_and_save_faiss_embeddings()
+        chat()
 
     if 'OPENAI_API_KEY' in os.environ:
         os.environ.pop('OPENAI_API_KEY')
@@ -197,18 +215,20 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ChatGPT GameRec')
     parser.add_argument('-c', '--config', metavar='config', type=str,
-                        help='JSON config file', default='config.json')
-    parser.add_argument('-lt', '--load-transcripts', type=bool, metavar='load_transcripts',
-                        help='whether to load previously-extracted transcripts from JSON file',
-                        default=True)
-    parser.add_argument('-et', '--extract-transcripts', metavar='extract_transcripts', type=bool,
-                        help='whether to extract transcripts for videos from channel ID given in config',
-                        default=False)
+                        help='JSON config file, defaults to config.json',
+                        default='config.json')
     parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
-                        help='JSON file containing video transcripts', default='transcripts.json')
-    parser.add_argument('-d', '--demo', action='store_true',
-                        help='Simple demo mode: output an LLM-generated summary of one random video', default=False)
-    parser.add_argument('-ch', '--chat', action='store_true',
-                        help='Chat demo mode: chat interactively with transcript demo store', default=False)
+                        help='JSON file containing video transcripts, defaults to transcripts.json',
+                        default='transcripts.json')
+    parser.add_argument('-m', '--mode',
+                        choices=['extract-transcripts',
+                                 'create-embeddings',
+                                 'summary-demo',
+                                 'chat-demo',
+                                 'end-to-end'],
+                        help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
+                             '"end-to-end".  See README for more info.',
+                        default='extract-transcripts'
+                        )
     args = parser.parse_args()
     main()
