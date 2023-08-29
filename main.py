@@ -27,26 +27,34 @@ from video import Video
 
 def get_channel_videos(config):
 
+    assert type(config.get('channel_id')) in [str, list]
+
     youtube = build('youtube', 'v3', developerKey=config.get('api_key'))
 
-    # get Uploads playlist id
-    res = youtube.channels().list(id=config.get('channel_id'),
-                                  part='contentDetails').execute()
-    playlist_id = res['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-    videos = []
-    next_page_token = None
-    loop = True
- 
-    while loop:
-        res = youtube.playlistItems().list(playlistId=playlist_id,
-                                           part='snippet',
-                                           maxResults=50,
-                                           pageToken=next_page_token).execute()
-        videos += res['items']
-        next_page_token = res.get('nextPageToken')
+    # get playlist id(s)
+    channel_ids = config.get('channel_id')
+    if isinstance(channel_ids, str):
+        channel_ids = [channel_ids]
 
-        if next_page_token is None:
-            loop = False
+    videos = []
+
+    for channel_id in channel_ids:
+        res = youtube.channels().list(id=channel_id,
+                                      part='contentDetails').execute()
+        playlist_id = res['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+        next_page_token = None
+        loop = True
+
+        while loop:
+            res = youtube.playlistItems().list(playlistId=playlist_id,
+                                               part='snippet',
+                                               maxResults=50,
+                                               pageToken=next_page_token).execute()
+            videos += res['items']
+            next_page_token = res.get('nextPageToken')
+
+            if next_page_token is None:
+                loop = False
 
     return videos
 
@@ -77,7 +85,7 @@ def get_transcript_summary(transcript):
     """
     Get an LLM-generated summary given a video transcript
     """
-    chat = ChatOpenAI()
+    chat_ = ChatOpenAI()
 
     messages = [
         SystemMessage(content="You are an assistant that provides summaries of video game reviews given a transcript "
@@ -85,7 +93,7 @@ def get_transcript_summary(transcript):
         HumanMessage(content=f"Video game review transcript: {transcript}")
     ]
 
-    ai_message = chat(messages)
+    ai_message = chat_(messages)
 
     return ai_message.content
 
