@@ -27,10 +27,16 @@ Recommended: [Windows Terminal](https://learn.microsoft.com/en-us/windows/termin
 1. From a PowerShell prompt, run `wsl --install` from PowerShell and restart Windows
 2. Install [Ubuntu](https://www.microsoft.com/store/productid/9PDXGNCFSCZV?ocid=pdpshare) from the Microsoft Store and setup a root user (a prompt should launch automatically after installing Ubuntu or by manually launching Ubuntu from Windows Terminal)
 3. Clone the repository either in Windows (accessible in WSL via /mnt/c/<path to repo>) or WSL
-4. Launch VS Code from the repository location in WSL: `code .`
-5. Observe VS Code connected to WSL via green status bar icon at lower-right: `><WSL: Ubuntu`
-6. Ensure python, pip, and venv are installed on Ubuntu. In VS Code Terminal or Windows Terminal: `apt install python3 python3-pip python3.10-venv`
-7. Run the bash commands listed at the top of this section, beginning with `python3 -m venv env` (Note: python3 is used on Debian)
+4. Launch VS Code from the repository location in WSL: `code .` and observe VS Code connected to WSL via green status bar icon at lower-right: `><WSL: Ubuntu`
+    1. Or: Launch VS Code from Windows, choose "Connect to WSL" in the command palette (Ctrl+Shift+P). Then open the repo folder in VS Code Explorer.
+6. Ensure python, pip, and venv are installed on Ubuntu. In VS Code Terminal or Windows Terminal (Ubuntu): `apt install python3 python3-pip python3.10-venv`
+    1. Note: Python 3.10 was the default version installed in Ubuntu 22 LTS as of this writing 9/4/2023.
+7. In the VS Code command palette, run `Python: Create Environment`. This will create a new venv in the folder .venv by default.
+8. After VS Code creates the environment, navigate to the VS Code Terminal window and install dependencies:
+    1. Note that the terminal prompt is prefixed by `(.venv)` and you are working in the virtual environment created in VS Code
+    2. Run `pip install --upgrade pip`
+    3. Run `pip install -r requirements.txt`
+9. VS Code setup is complete, main.py can be run in the debugger with F5.
 
 ### Config
 
