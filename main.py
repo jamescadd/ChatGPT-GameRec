@@ -236,7 +236,7 @@ if __name__ == "__main__":
                                  'end-to-end'],
                         help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
                              '"end-to-end".  See README for more info.',
-                        default='extract-transcripts'
+                        default='chat-demo'
                         )
     args = parser.parse_args()
     main()
