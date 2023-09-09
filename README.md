@@ -26,7 +26,7 @@ Prerequisites:
 Recommended: [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install)
 1. From a PowerShell prompt, run `wsl --install` from PowerShell and restart Windows
 2. Install [Ubuntu](https://www.microsoft.com/store/productid/9PDXGNCFSCZV?ocid=pdpshare) from the Microsoft Store and setup a root user (a prompt should launch automatically after installing Ubuntu or by manually launching Ubuntu from Windows Terminal)
-3. Clone the repository either in Windows (accessible in WSL via /mnt/c/<path to repo>) or WSL
+3. Clone the repository in the Linux filesystem for improved performance, either in Ubuntu shell or with Windows GitHub Desktop app referencing folder `\\wsl.localhost\Ubuntu\<path to repo>`.
 4. Launch VS Code from the repository location in WSL: `code .` and observe VS Code connected to WSL via green status bar icon at lower-right: `><WSL: Ubuntu`
     1. Or: Launch VS Code from Windows, choose "Connect to WSL" in the command palette (Ctrl+Shift+P). Then open the repo folder in VS Code Explorer.
 6. Ensure python, pip, and venv are installed on Ubuntu. In VS Code Terminal or Windows Terminal (Ubuntu): `apt install python3 python3-pip python3.10-venv`
