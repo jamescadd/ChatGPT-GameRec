@@ -6,7 +6,7 @@ import os
 from random import random
 
 from alive_progress import alive_bar
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain.document_loaders import JSONLoader
