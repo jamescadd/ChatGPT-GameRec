@@ -123,7 +123,7 @@ def extract_transcripts(config):
 
 
 def create_and_save_faiss_embeddings():
-    embeddings = OpenAIEmbeddings(chunk_size=1)
+    embeddings = OpenAIEmbeddings(chunk_size=25)
 
     loader = JSONLoader(
         file_path=args.transcripts_file,
@@ -156,7 +156,7 @@ def chat():
         return chat_history_
 
     llm = ChatOpenAI()
-    embeddings = OpenAIEmbeddings(chunk_size=25)
+    embeddings = O.penAIEmbeddings(chunk_size=25)
 
     # Initialize gpt-35-turbo and our embedding model
     # load the faiss vector store we saved into memory
