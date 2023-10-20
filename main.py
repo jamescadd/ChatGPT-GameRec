@@ -156,7 +156,7 @@ def chat():
         return chat_history_
 
     llm = ChatOpenAI()
-    embeddings = O.penAIEmbeddings(chunk_size=25)
+    embeddings = OpenAIEmbeddings(chunk_size=25)
 
     # Initialize gpt-35-turbo and our embedding model
     # load the faiss vector store we saved into memory
