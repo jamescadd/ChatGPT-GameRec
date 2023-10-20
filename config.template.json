@@ -3,9 +3,12 @@
     "api_key": "your_api_key",
     "channel_id": [
       "UChivF4Th30mhk2e3pGLY6_w",
-      "UCfBLXTwLoUpDAkHcHizW3Jg"
+      "UCfBLXTwLoUpDAkHcHizW3Jg",
+      "UCn2pQB4jsCTLUtx2NIkCvUg",
+      "UCZ5JH5f8ODllQjrzgqdT5Dg",
+      "UCEozS0uaZibXKTQSu10XgSw"
     ],
-    "channel_id_comment": "Lu's Retro Source, SNES Drunk"
+    "channel_id_comment": "Lu's Retro Source, SNES Drunk, Video Game Escoterica, Sega Lord X, Pixel Cherry Ninja"
   },
   "openai": {
     "api_key": "your_api_key"
