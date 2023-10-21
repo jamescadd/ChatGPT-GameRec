@@ -12,6 +12,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.document_loaders import JSONLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
+from langchain.memory import ConversationBufferMemory
 from langchain.schema import (
     AIMessage,
     HumanMessage,
@@ -149,11 +150,9 @@ def chat():
     assert os.path.exists('faiss_index')
 
     def ask_question_with_context(qa_, question, chat_history_):
-        query_ = "What games do you recommend?"
-        result = qa_({"question": question, "chat_history": chat_history_})
+        result = qa_({"question": question})
+        print(result)
         print("answer:", result["answer"])
-        chat_history_ = [(query_, result["answer"])]
-        return chat_history_
 
     llm = ChatOpenAI()
     embeddings = OpenAIEmbeddings(chunk_size=25)
@@ -166,27 +165,35 @@ def chat():
     # use the faiss vector store we saved to search the local document
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
 
-    question_prompt = PromptTemplate.from_template("Given the following conversation and a specific request for a "
-                                                   "recommendation, return a suggestion"
-                                                   "\nChat History:"
+    question_prompt = PromptTemplate.from_template("Given the following conversation history and a specific request for"
+                                                   " a recommendation, return a suggestion"
+                                                   "\n\nChat History:"
                                                    "\n{chat_history}"
-                                                   "\nRecommendation request: {question}"
-                                                   "\nSuggestion:")
+                                                   "\n\nRecommendation request:"
+                                                   "\n{question}"
+                                                   "\n\nSuggestion:")
+
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        input_key='question',
+        output_key='answer',
+        return_messages=True,
+    )
 
     qa = ConversationalRetrievalChain.from_llm(llm=llm,
                                                retriever=retriever,
-                                               condense_question_prompt=question_prompt,
                                                return_source_documents=True,
+                                               memory=memory,
                                                verbose=True)
 
-    chat_history = []
+    chat_history = ''
     continue_chat = True
     while continue_chat:
         query = input('you ("q" or "quit" to quit): ')
         if query.lower() in ['q', 'quit']:
             continue_chat = False
         if continue_chat:
-            chat_history = ask_question_with_context(qa, query, chat_history)
+            ask_question_with_context(qa, query, chat_history)
 
 
 def main():
