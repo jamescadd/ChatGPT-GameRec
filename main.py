@@ -165,13 +165,10 @@ def chat():
     # use the faiss vector store we saved to search the local document
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
 
-    question_prompt = PromptTemplate.from_template("Given the following conversation history and a specific request for"
-                                                   " a recommendation, return a suggestion"
-                                                   "\n\nChat History:"
-                                                   "\n{chat_history}"
-                                                   "\n\nRecommendation request:"
-                                                   "\n{question}"
-                                                   "\n\nSuggestion:")
+    condense_question_prompt = PromptTemplate.from_template(
+        "Given the following conversation and a follow up question, rephrase the follow up question to be a standalone"
+        "\nquestion, in its original language.\n\nChat History:\n{chat_history}\nFollow Up Input: {question}\n"
+        "Standalone question:")
 
     memory = ConversationBufferMemory(
         memory_key="chat_history",
@@ -184,6 +181,7 @@ def chat():
                                                retriever=retriever,
                                                return_source_documents=True,
                                                memory=memory,
+                                               condense_question_prompt=condense_question_prompt,
                                                verbose=True)
 
     chat_history = ''
