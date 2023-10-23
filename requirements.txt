@@ -6,3 +6,4 @@ langchain
 openai
 tiktoken
 youtube-transcript-api
+streamlit

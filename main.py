@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import streamlit as st
 from random import random
 
 from alive_progress import alive_bar
@@ -151,7 +152,9 @@ def chat():
 
     def ask_question_with_context(qa_, question, chat_history_):
         result = qa_({"question": question})
+        st.write(result)
         print(result)
+        st.write("answer:", result["answer"]);
         print("answer:", result["answer"])
 
     llm = ChatOpenAI()
@@ -187,11 +190,12 @@ def chat():
     chat_history = ''
     continue_chat = True
     while continue_chat:
-        query = input('you ("q" or "quit" to quit): ')
-        if query.lower() in ['q', 'quit']:
+        st.text_input('you ("q" or "quit" to quit): ', key='query')
+        # query = input('you ("q" or "quit" to quit): ')
+        if st.session_state.query.lower() in ['q', 'quit']:
             continue_chat = False
         if continue_chat:
-            ask_question_with_context(qa, query, chat_history)
+            ask_question_with_context(qa, st.session_state.query, chat_history)
 
 
 def main():
