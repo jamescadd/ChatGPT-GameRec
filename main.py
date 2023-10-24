@@ -23,7 +23,7 @@ import openai
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
-from video import Video
+from gamerec.video import Video
 
 
 def get_channel_videos(config):
