@@ -109,4 +109,4 @@ streamlit run Chat.py
 docker build -t gamerec:v1 .
 docker run --rm -p 8880:8501 gamerec:v1
 ```
-Navigate to `localhost:8880` in your browser to view the application.
+Navigate to [http://localhost:8880](http://localhost:8880/) in your browser to view the application.
