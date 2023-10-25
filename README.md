@@ -94,3 +94,19 @@ specify with `-tf`, defaults to `transcripts.json`.
 
 FAISS embeddings must have already been extracted and placed in the
 `faiss_index` directory.
+
+## Streamlit
+
+### Command Line
+
+```bash
+streamlit run Chat.py
+```
+
+### Docker
+
+```bash
+docker build -t gamerec:v1 .
+docker run --rm -p 8880:8501 gamerec:v1
+```
+Navigate to `localhost:8880` in your browser to view the application.
