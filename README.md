@@ -32,6 +32,7 @@ Recommended: [Windows Terminal](https://learn.microsoft.com/en-us/windows/termin
 6. Ensure python, pip, and venv are installed on Ubuntu. In VS Code Terminal or Windows Terminal (Ubuntu): `apt install python3 python3-pip python3.10-venv`
     1. Note: Python 3.10 was the default version installed in Ubuntu 22 LTS as of this writing 9/4/2023.
 7. In the VS Code command palette, run `Python: Create Environment`. This will create a new venv in the folder .venv by default.
+    1. Alternatively, use the existing environment and run the command `Python: Create Terminal` after closing the existing terminal to use the .venv environment (terminal should then show the (.venv) prefix at the prompt).
 8. After VS Code creates the environment, navigate to the VS Code Terminal window and install dependencies:
     1. Note that the terminal prompt is prefixed by `(.venv)` and you are working in the virtual environment created in VS Code
     2. Run `pip install --upgrade pip`
