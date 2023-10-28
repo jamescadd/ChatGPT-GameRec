@@ -1,8 +1,13 @@
 import streamlit as st
+import openai
 
 st.set_page_config(page_title="Chat",page_icon="👾")
+st.title("# 🕹️ Game recommendations")
 
-st.title("# 🕹️ Game recommendations ")
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+
+
+
 
 if "messages" not in st.session_state:
     st.session_state.messages = []

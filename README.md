@@ -37,7 +37,8 @@ Recommended: [Windows Terminal](https://learn.microsoft.com/en-us/windows/termin
     1. Note that the terminal prompt is prefixed by `(.venv)` and you are working in the virtual environment created in VS Code
     2. Run `pip install --upgrade pip`
     3. Run `pip install -r requirements.txt`
-9. VS Code setup is complete, main.py can be run in the debugger with F5.
+9. VS Code setup is complete, `main.py` can be run in the debugger with F5 using the `Current File` configuration with `main.py` selected.
+    1. The `Streamlit` debug configuration runs `streamlit run Chat.py`
 
 ### Config
 
@@ -52,7 +53,12 @@ Replace values from the template with your actual values:
 **Note**: `channel_id` can be a single string for one channel ID, or a list
 of strings if you want to extract video transcripts from multiple channels.
 
-## Execution
+#### Streamlit config
+
+1. Create file: `.streamlit\secrets.toml`
+2. Add OpenAI API key to secrets.toml: `OPENAI_API_KEY = "your_api_key"`
+
+## Terminal Execution
 
 Run `python main.py -h` for more info and options.
 
@@ -95,3 +101,13 @@ specify with `-tf`, defaults to `transcripts.json`.
 
 FAISS embeddings must have already been extracted and placed in the
 `faiss_index` directory.
+
+## Streamlit execution
+
+Run `streamlit run Chat.py` to start the Streamlit server
+
+Browse to `http://localhost:8501` to view the app
+
+### Debugging Streamlit
+
+In VS Code, select the `Streamlit` configuration from the `Run and debug` dropdown to run `streamlit run Chat.py` in the VS Code Python debugger.
