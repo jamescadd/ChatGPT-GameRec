@@ -9,7 +9,7 @@ from langchain.schema import (
     SystemMessage
 )
 
-class ChatOpenAI(object):
+class ChatConversation(object):
 
     def __init__(self, retriever: any): # TODO: Type retriever as VectorStoreRetriever
         self.llm = ChatOpenAI()
@@ -37,6 +37,6 @@ class ChatOpenAI(object):
 
     def ask_question_with_context(self, question) -> str:
         result = self.qa({"question": question})
-        # print(result)
-        # print("answer:", result["answer"])
+        print(result)
+        print("answer:", result["answer"])
         return result["answer"]

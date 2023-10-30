@@ -11,7 +11,7 @@ class VectorStoreFaiss(object):
         assert os.path.exists(folder_path)
         self.folder_path = folder_path
 
-    def get_retriever(self) -> any:
+    def get_retriever(self):
         embeddings = OpenAIEmbeddings(chunk_size=25)
 
         # Initialize gpt-35-turbo and our embedding model
