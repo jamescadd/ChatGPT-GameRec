@@ -159,3 +159,8 @@ config.json
 transcripts.json
 *.pkl
 *.faiss
+
+# Streamlit
+# 20231015 JC - Not sure if we should always ignore the .streamlit directory
+.streamlit/
+secrets.toml
