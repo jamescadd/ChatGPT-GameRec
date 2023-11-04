@@ -18,6 +18,9 @@ On Windows `cmd` or PowerShell, instead of using the `source` command above to a
 env\Scripts\activate.bat
 ```
 
+#### Docker install on Ubuntu
+[Install docker using the repository](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
+
 #### VS Code & WSL with Ubuntu
 Prerequisites: 
 - Windows 11 or Windows 10 version 2004 or higher to support WSL2: [How to Install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
