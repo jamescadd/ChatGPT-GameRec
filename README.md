@@ -54,6 +54,11 @@ Replace values from the template with your actual values:
 **Note**: `channel_id` can be a single string for one channel ID, or a list
 of strings if you want to extract video transcripts from multiple channels.
 
+#### Streamlit config
+
+1. Create file: `.streamlit\secrets.toml`
+2. Add OpenAI API key to secrets.toml: `OPENAI_API_KEY = "your_api_key"`
+
 ## Execution
 
 Run `python main.py -h` for more info and options.
