@@ -1,0 +1,3 @@
+# Set .sh files to always use LF endings to prevent scripts failing while running in Docker
+# https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings
+*.sh text eol=lf
