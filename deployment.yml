@@ -1,0 +1,33 @@
+api-version: 2019-12-01
+location: centralus
+name: GameRec
+properties:
+  containers:
+  - name: streamlitapp
+    properties:
+      image: streamlitgamerec.azurecr.io/gamerec:v1
+      ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+      resources:
+        requests:
+          cpu: 2.0
+          memoryInGB: 1.5
+  imageRegistryCredentials:
+  - server: streamlitgamerec.azurecr.io
+    username: <user_name>
+    password: <password>
+  restartPolicy: Never
+  ipAddress:
+    ports:
+    - port: 443
+      protocol: TCP
+    - port: 80
+      protocol: TCP
+    type: Public
+    dnsNameLabel: gamerec
+  osType: Linux
+tags: null
+type: Microsoft.ContainerInstance/containerGroups

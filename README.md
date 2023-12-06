@@ -18,12 +18,20 @@ On Windows `cmd` or PowerShell, instead of using the `source` command above to a
 env\Scripts\activate.bat
 ```
 
+#### Docker install on Ubuntu
+[Install docker using the repository](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
+
 #### VS Code & WSL with Ubuntu
 Prerequisites: 
 - Windows 11 or Windows 10 version 2004 or higher to support WSL2: [How to Install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
 - VS Code with WSL, Remote Development, and Python extensions
 
-Recommended: [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install)
+Optional: 
+- [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install)
+- [GitHub Desktop for Windows](https://desktop.github.com/)
+
+> **Mind the End of Your Line ([link](https://adaptivepatchwork.com/2012/03/01/mind-the-end-of-your-line/)):** GitHub Desktop for Windows may change end of line characters from `LF` to `CRLF` to match Windows defaults. Scripts in this repo must use `LF` to run correctly in Docker - in particular run.sh will [fail with ^M](https://stackoverflow.com/questions/14219092/bash-script-bin-bashm-bad-interpreter-no-such-file-or-directory) if `CRLF` eol characters are used. In the file `C:\Users\[username]\.gitconfig` section labeled `[core]` add `autocrlf = false` to [preserve line endings in the repo](https://stackoverflow.com/questions/71995658/how-to-stop-github-desktop-from-changing-my-line-endings). Install the [VS Code extension eol](https://marketplace.visualstudio.com/items?itemName=sohamkamani.code-eol) for a visual indicator of `LF` and `CRLF` in the editor. A [`.gitattributes`](https://git-scm.com/docs/gitattributes) file in this repo prevents `CRLF` eol characters from being checked into `.sh` files.
+
 1. From a PowerShell prompt, run `wsl --install` from PowerShell and restart Windows
 2. Install [Ubuntu](https://www.microsoft.com/store/productid/9PDXGNCFSCZV?ocid=pdpshare) from the Microsoft Store and setup a root user (a prompt should launch automatically after installing Ubuntu or by manually launching Ubuntu from Windows Terminal)
 3. Clone the repository in the Linux filesystem for improved performance, either in Ubuntu shell or with Windows GitHub Desktop app referencing folder `\\wsl.localhost\Ubuntu\<path to repo>`.
@@ -50,6 +58,11 @@ Replace values from the template with your actual values:
 
 **Note**: `channel_id` can be a single string for one channel ID, or a list
 of strings if you want to extract video transcripts from multiple channels.
+
+#### Streamlit config
+
+1. Create file: `.streamlit\secrets.toml`
+2. Add OpenAI API key to secrets.toml: `OPENAI_API_KEY = "your_api_key"`
 
 ## Execution
 
@@ -94,3 +107,19 @@ specify with `-tf`, defaults to `transcripts.json`.
 
 FAISS embeddings must have already been extracted and placed in the
 `faiss_index` directory.
+
+## Streamlit
+
+### Command Line
+
+```bash
+streamlit run Chat.py
+```
+
+### Docker
+
+```bash
+docker build -t gamerec:v1 .
+docker run --rm -p 8880:8501 gamerec:v1
+```
+Navigate to [http://localhost:8880](http://localhost:8880/) in your browser to view the application.
