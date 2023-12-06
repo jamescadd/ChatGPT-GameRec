@@ -1,4 +1,4 @@
-name: daxeditcopilot
+name: gamerec
 channels:
  - conda-forge
  - defaults
