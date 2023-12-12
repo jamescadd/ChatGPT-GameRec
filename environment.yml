@@ -8,6 +8,7 @@ dependencies:
  - pip:
    - openai
    - alive-progress
+   - audio-recorder-streamlit
    - faiss-cpu
    - google-api-python-client
    - jq
