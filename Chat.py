@@ -11,10 +11,14 @@ from gamerec.vectorStoreFaiss import VectorStoreFaiss
 
 TMP_AUDIO_FILENAME = "TTS.wav"
 
-st.set_page_config(page_title="Chat",page_icon="👾")
+st.set_page_config(page_title="Chat", page_icon="👾")
 st.title("# 🕹️ Game recommendations")
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
+speech_key = st.secrets['AZURE_SPEECH_KEY']
+service_region = st.secrets['AZURE_SERVICE_REGION']
+
+speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
 
 
 def clear_audio():
@@ -36,6 +40,7 @@ def recognize_speech(filename):
     speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config,
                                                    audio_config=audio_config)
     result = speech_recognizer.recognize_once_async().get()
+    st.write(result)
     if result.reason == speechsdk.ResultReason.RecognizedSpeech:
         # may want to first check if 'transcription' key is in session state, but might not want to or need to,
         # depending on how the app evolves
@@ -63,6 +68,16 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+if 'recorder_key' not in st.session_state:
+    st.session_state.recorder_key = str(uuid.uuid4())
+
+st.write(f"{st.session_state.recorder_key}")
+
+st.session_state["audio"] = audio_recorder(
+    key=st.session_state.recorder_key,
+    text="boogertron"
+)
 
 if st.session_state.audio is not None:
     with open(TMP_AUDIO_FILENAME, mode="wb") as f:

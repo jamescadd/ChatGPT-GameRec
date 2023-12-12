@@ -1,5 +1,6 @@
 alive-progress
 audio-recorder-streamlit
+azure-cognitiveservices-speech
 faiss-cpu
 google-api-python-client
 jq
