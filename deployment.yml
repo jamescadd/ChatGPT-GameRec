@@ -1,11 +1,13 @@
 api-version: 2019-12-01
-location: centralus
+# location: centralus
+location: westus3
 name: GameRec
 properties:
   containers:
   - name: streamlitapp
     properties:
-      image: streamlitgamerec.azurecr.io/gamerec:v1
+      # image: streamlitgamerec.azurecr.io/gamerec:v1
+      image: gamerecdev.azurecr.io/gamerec:v1
       ports:
       - port: 80
         protocol: TCP
@@ -16,7 +18,8 @@ properties:
           cpu: 2.0
           memoryInGB: 1.5
   imageRegistryCredentials:
-  - server: streamlitgamerec.azurecr.io
+  #- server: streamlitgamerec.azurecr.io
+  - server: gamerecdev.zurecr.io
     username: <user_name>
     password: <password>
   restartPolicy: Never
