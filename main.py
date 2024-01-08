@@ -23,6 +23,7 @@ import openai
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
+from gamerec.dataStore import DataStoreType, createDataStore
 from gamerec.video import Video
 
 
@@ -112,15 +113,16 @@ def summary_demo():
     print(f"LLM-generated summary:\n\n{output}")
 
 
-def extract_transcripts(config):
+def extract_transcripts(config, dataStore):
     """
     Extract transcripts and save to JSON file
     """
     videos = get_channel_videos(config.get('youtube'))
     output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
 
-    with open(args.transcripts_file, 'w') as o:
-        json.dump(output_json, o, indent=2)
+    #with open(args.transcripts_file, 'w') as o:
+    #    json.dump(output_json, o, indent=2)
+    dataStore.writeTranscripts(output_json)
 
 
 def create_and_save_faiss_embeddings():
@@ -202,8 +204,10 @@ def main():
     # set OPENAI_API_KEY env variable for LangChain
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
 
+    data_store = createDataStore(args.data_store, config, transcripts_file = args.transcripts_file)
+
     if args.mode == "extract-transcripts":
-        extract_transcripts(config)
+        extract_transcripts(config, data_store)
 
     if args.mode == 'summary-demo':
         assert os.path.exists(args.transcripts_file)
@@ -230,6 +234,9 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--config', metavar='config', type=str,
                         help='JSON config file, defaults to config.json',
                         default='config.json')
+    parser.add_argument('-ds', '--data-store', metavar='data_store_type', type=DataStoreType,
+                        help='Data store for transcripts and embeddings, defaults to FILESYSTEM',
+                        default=DataStoreType.FILESYSTEM)
     parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
                         help='JSON file containing video transcripts, defaults to transcripts.json',
                         default='transcripts.json')
