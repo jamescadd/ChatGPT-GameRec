@@ -61,20 +61,21 @@ def get_channel_videos(config):
     return videos
 
 
-def get_captions_from_videos(videos, channel_id):
-    video_ids = [video['snippet']['resourceId']['videoId'] for video in videos]  # list of all video_id of channel
+def get_captions_from_videos(videos):
+    # video_ids = [video['snippet']['resourceId']['videoId'] for video in videos]  # list of all video_id of channel
 
-    print(f"Extracting {len(video_ids)} transcripts from channel ID {channel_id}")
+    print(f"Extracting {len(videos)} transcripts")
 
-    with alive_bar(len(video_ids)) as bar:
+    with alive_bar(len(videos)) as bar:
         output_json = []
 
-        for video_id in video_ids:
+        for video in videos:
             try:
+                video_id = video['snippet']['resourceId']['videoId']
                 responses = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
                 url = f"https://www.youtube.com/watch?v={video_id}"
                 captions = [response['text'] for response in responses]
-                output_json.append({"url": url, "captions": captions})
+                output_json.append({"channelId": video['snippet']['channelId'], "channelTitle": video['snippet']['channelTitle'], "videoId": video_id, "publishedAt": video['snippet']['publishedAt'], "url": url, "captions": captions})
             except (TranscriptsDisabledError, NoTranscriptFound) as e:
                 print(e)
             finally:
@@ -118,7 +119,7 @@ def extract_transcripts(config, dataStore):
     Extract transcripts and save to JSON file
     """
     videos = get_channel_videos(config.get('youtube'))
-    output_json = get_captions_from_videos(videos, config.get('youtube').get('channel_id'))
+    output_json = get_captions_from_videos(videos)
 
     #with open(args.transcripts_file, 'w') as o:
     #    json.dump(output_json, o, indent=2)
@@ -248,7 +249,7 @@ if __name__ == "__main__":
                                  'end-to-end'],
                         help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
                              '"end-to-end".  See README for more info.',
-                        default='chat-demo'
+                        default='extract-transcripts'
                         )
     args = parser.parse_args()
     main()
