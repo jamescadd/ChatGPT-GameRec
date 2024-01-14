@@ -1,6 +1,9 @@
 # https://www.pragnakalp.com/automate-youtube-video-transcription-python/
 
+import ast
 import argparse
+# import getpass
+import itertools
 import json
 import os
 from random import random
@@ -14,12 +17,11 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import (
-    AIMessage,
     HumanMessage,
     SystemMessage
 )
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
-import openai
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
@@ -70,15 +72,18 @@ def get_captions_from_videos(videos):
         output_json = []
 
         for video in videos:
+            video_id = video['snippet']['resourceId']['videoId']
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            captions = ""
+            
             try:
-                video_id = video['snippet']['resourceId']['videoId']
                 responses = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-                url = f"https://www.youtube.com/watch?v={video_id}"
                 captions = [response['text'] for response in responses]
-                output_json.append({"channelId": video['snippet']['channelId'], "channelTitle": video['snippet']['channelTitle'], "videoId": video_id, "publishedAt": video['snippet']['publishedAt'], "url": url, "captions": captions})
             except (TranscriptsDisabledError, NoTranscriptFound) as e:
                 print(e)
             finally:
+                # Always save video metadata to prevent re-attempting to pull transcripts for videos without them
+                output_json.append({"channelId": video['snippet']['channelId'], "channelTitle": video['snippet']['channelTitle'], "videoId": video_id, "publishedAt": video['snippet']['publishedAt'], "url": url, "captions": captions})
                 bar()
 
     return output_json
@@ -114,37 +119,68 @@ def summary_demo():
     print(f"LLM-generated summary:\n\n{output}")
 
 
-def extract_transcripts(config, dataStore):
+def extract_transcripts(config, data_store):
     """
     Extract transcripts and save to JSON file
     """
-    videos = get_channel_videos(config.get('youtube'))
-    output_json = get_captions_from_videos(videos)
+    new_videos = get_channel_videos(config.get('youtube'))
+
+    current_videos = data_store.read_transcripts()
+    current_video_ids = [video['videoId'] for video in current_videos]
+    new_video_ids = [video['snippet']['resourceId']['videoId'] for video in new_videos]
+    delta_video_ids = set(new_video_ids).difference(set(current_video_ids))
+    delta_videos = [delta_video for delta_video in new_videos if delta_video['snippet']['resourceId']['videoId'] in delta_video_ids]
+
+    output_json = get_captions_from_videos(delta_videos)
 
     #with open(args.transcripts_file, 'w') as o:
     #    json.dump(output_json, o, indent=2)
-    dataStore.writeTranscripts(output_json)
+    data_store.write_transcripts(current_videos + output_json)
+    return output_json
 
 
-def create_and_save_faiss_embeddings():
+def create_and_save_faiss_embeddings(delta_videos = []):
     embeddings = OpenAIEmbeddings(chunk_size=25)
-
-    loader = JSONLoader(
-        file_path=args.transcripts_file,
-        text_content=False,
-        jq_schema='.[].captions')
-
-    print("Creating and saving FAISS embeddings...")
-
+    # TODO: Get a delta between videos that have an embedding saved and videos in transcriptions.json that have not yet been embedded. Below will automatically re-embed all saved documents which could be unintentionally expensive.
     with alive_bar(1) as bar:
+        if (len(delta_videos) == 0):
+            loader = JSONLoader(
+                file_path=args.transcripts_file,
+                text_content=False,
+                jq_schema='.[].captions')
+            print("Creating and saving FAISS embeddings...")
 
-        pages = loader.load_and_split()
+            pages = loader.load_and_split()
 
-        # Use LangChain to create the embeddings
-        db = FAISS.from_documents(documents=pages, embedding=embeddings)
+            # Use LangChain to create the embeddings
+            db = FAISS.from_documents(documents=pages, embedding=embeddings)
 
-        # save the embeddings into FAISS vector store
-        db.save_local("faiss_index")
+            # save the embeddings into FAISS vector store
+            db.save_local("faiss_index")
+        else:
+            text_splitter = RecursiveCharacterTextSplitter() # chunk_size=25, Using same as default for JSONLoader.load_and_split
+            # delta_captions = [ast.literal_eval(doc['captions']) for doc in delta_videos] 
+            # captions_map = map(ast.literal_eval, [doc['captions'] for doc in delta_videos])
+            captions = [doc['captions'] for doc in delta_videos]
+            cleaned_captions = []
+            for caption in captions:
+                if isinstance(caption, str) and caption.startswith('[') and caption.endswith(']'):
+                    continue
+                else:
+                    try:
+                        cleaned_captions.append(ast.literal_eval(caption))
+                    except Exception:
+                        cleaned_captions.append(caption)
+            delta_captions = list(itertools.chain.from_iterable(cleaned_captions))
+            delta_documents = text_splitter.create_documents(delta_captions) # TODO: Probably need to replicate the jq_schema='.[].captions' when loading from file
+
+            if (os.path.exists('faiss_index')):
+                vector_store = FAISS.load_local("./faiss_index", embeddings)
+                vector_store.add_documents(delta_documents)
+            else:
+                vector_store = FAISS.from_documents(documents=delta_documents, embedding=embeddings)
+            
+            vector_store.save_local("faiss_index")
 
         bar()
 
@@ -205,6 +241,10 @@ def main():
     # set OPENAI_API_KEY env variable for LangChain
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
 
+    # Setup LangSmith
+    # os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    # os.environ["LANGCHAIN_API_KEY"] = getpass.getpass()
+
     data_store = createDataStore(args.data_store, config, transcripts_file = args.transcripts_file)
 
     if args.mode == "extract-transcripts":
@@ -218,11 +258,15 @@ def main():
         assert os.path.exists(args.transcripts_file)
         create_and_save_faiss_embeddings()
 
+    if args.mode == 'create-update-transcripts-embeddings':
+        delta_videos = extract_transcripts(config, data_store)
+        create_and_save_faiss_embeddings(delta_videos)
+
     if args.mode == "chat-demo":
         chat()
 
     if args.mode == 'end-to-end':
-        extract_transcripts(config)
+        extract_transcripts(config, data_store)
         create_and_save_faiss_embeddings()
         chat()
 
@@ -244,12 +288,13 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mode',
                         choices=['extract-transcripts',
                                  'create-embeddings',
+                                 'create-update-transcripts-embeddings'
                                  'summary-demo',
                                  'chat-demo',
                                  'end-to-end'],
-                        help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
+                        help='One of "extract-transcripts", "create-embeddings", "create-update-transcripts-embeddings", "summary-demo", "chat-demo", or'
                              '"end-to-end".  See README for more info.',
-                        default='extract-transcripts'
+                        default='create-update-transcripts-embeddings'
                         )
     args = parser.parse_args()
     main()
