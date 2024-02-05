@@ -2,8 +2,8 @@ alive-progress
 faiss-cpu
 google-api-python-client
 jq
-langchain
-openai
+langchain # Automatically installs langchain-community
+langchain-openai
 tiktoken
 youtube-transcript-api
 streamlit

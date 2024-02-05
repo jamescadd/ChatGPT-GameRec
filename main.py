@@ -7,19 +7,14 @@ from random import random
 
 from alive_progress import alive_bar
 from googleapiclient.discovery import build
-from langchain.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
-from langchain.document_loaders import JSONLoader
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
-from langchain.schema import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage
-)
-from langchain.vectorstores import FAISS
-import openai
+from langchain.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.document_loaders import JSONLoader
+from langchain_community.vectorstores import FAISS
+from langchain_core.messages import HumanMessage, SystemMessage
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
@@ -150,7 +145,7 @@ def chat():
     assert os.path.exists('faiss_index')
 
     def ask_question_with_context(qa_, question, chat_history_):
-        result = qa_({"question": question})
+        result = qa_.invoke({"question": question})
         print(result)
         print("answer:", result["answer"])
 
