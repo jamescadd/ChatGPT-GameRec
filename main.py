@@ -15,6 +15,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import JSONLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.messages import HumanMessage, SystemMessage
+from langsmith import Client
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
@@ -196,6 +197,16 @@ def main():
 
     # set OPENAI_API_KEY env variable for LangChain
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
+
+    # Setup LangSmith if config.json contains 'langchain.langsmith_api_key'
+    if ("langchain" in config and ("langsmith_api_key" in config.get("langchain"))):
+        langsmith_api_key = config.get("langchain").get("langsmith_api_key")
+        if langsmith_api_key is not None:
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            os.environ["LANGCHAIN_PROJECT"] = "ChatGPT-GameRec"
+            os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+            os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
+            client = Client() # Initialize Langsmith
 
     if args.mode == "extract-transcripts":
         extract_transcripts(config)

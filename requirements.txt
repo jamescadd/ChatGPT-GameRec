@@ -4,6 +4,7 @@ google-api-python-client
 jq
 langchain # Automatically installs langchain-community
 langchain-openai
+langsmith
 tiktoken
 youtube-transcript-api
 streamlit
