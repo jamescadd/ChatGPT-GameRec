@@ -155,6 +155,7 @@ cython_debug/
 # IDEs
 .idea/
 .vscode/
+# Project config, video transcripts file, faiss index
 config.json
 transcripts.json
 *.pkl
@@ -164,3 +165,5 @@ transcripts.json
 # 20231015 JC - Not sure if we should always ignore the .streamlit directory
 .streamlit/
 secrets.toml
+# 20240208 JC - LangChain RecordManager
+record_manager_cache.sql
