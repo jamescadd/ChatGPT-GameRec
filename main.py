@@ -20,7 +20,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
 from gamerec.video import Video
-
+from gamerec.youtubeIndexer import YoutubeIndexer
 
 def get_channel_videos(config):
 
@@ -143,7 +143,7 @@ def create_and_save_faiss_embeddings():
 
 
 def chat():
-    assert os.path.exists('faiss_index')
+    assert os.path.exists('faiss_youtube')
 
     def ask_question_with_context(qa_, question, chat_history_):
         result = qa_.invoke({"question": question})
@@ -151,12 +151,13 @@ def chat():
         print("answer:", result["answer"])
 
     llm = ChatOpenAI()
-    embeddings = OpenAIEmbeddings(chunk_size=25)
+    # embeddings = OpenAIEmbeddings(chunk_size=25)
+    embeddings = OpenAIEmbeddings()
 
     # Initialize gpt-35-turbo and our embedding model
     # load the faiss vector store we saved into memory
     print("loading FAISS embeddings...")
-    vector_store = FAISS.load_local("./faiss_index", embeddings)
+    vector_store = FAISS.load_local("./faiss_youtube", embeddings)
     print("Done loading embeddings....")
     # use the faiss vector store we saved to search the local document
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
@@ -189,6 +190,9 @@ def chat():
         if continue_chat:
             ask_question_with_context(qa, query, chat_history)
 
+def update_index(config):
+    indexer = YoutubeIndexer(config)
+    indexer.update()
 
 def main():
 
@@ -208,24 +212,27 @@ def main():
             os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
             client = Client() # Initialize Langsmith
 
-    if args.mode == "extract-transcripts":
-        extract_transcripts(config)
-
-    if args.mode == 'summary-demo':
-        assert os.path.exists(args.transcripts_file)
-        summary_demo()
-
-    if args.mode == 'create-embeddings':
-        assert os.path.exists(args.transcripts_file)
-        create_and_save_faiss_embeddings()
+    # if args.mode == "extract-transcripts":
+    #     extract_transcripts(config)
+# 
+    # if args.mode == 'summary-demo':
+    #     assert os.path.exists(args.transcripts_file)
+    #     summary_demo()
+# 
+    # if args.mode == 'create-embeddings':
+    #     assert os.path.exists(args.transcripts_file)
+    #     create_and_save_faiss_embeddings()
 
     if args.mode == "chat-demo":
         chat()
 
-    if args.mode == 'end-to-end':
-        extract_transcripts(config)
-        create_and_save_faiss_embeddings()
-        chat()
+    # if args.mode == 'end-to-end':
+    #     extract_transcripts(config)
+    #     create_and_save_faiss_embeddings()
+    #     chat()
+
+    if args.mode == 'update-index':
+        update_index(config)
 
     if 'OPENAI_API_KEY' in os.environ:
         os.environ.pop('OPENAI_API_KEY')
@@ -236,17 +243,20 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--config', metavar='config', type=str,
                         help='JSON config file, defaults to config.json',
                         default='config.json')
-    parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
-                        help='JSON file containing video transcripts, defaults to transcripts.json',
-                        default='transcripts.json')
+    # parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
+    #                     help='JSON file containing video transcripts, defaults to transcripts.json',
+    #                     default='transcripts.json')
     parser.add_argument('-m', '--mode',
-                        choices=['extract-transcripts',
-                                 'create-embeddings',
-                                 'summary-demo',
+                        choices=[# 'extract-transcripts',
+                                 # 'create-embeddings',
+                                 # 'summary-demo',
                                  'chat-demo',
-                                 'end-to-end'],
-                        help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
-                             '"end-to-end".  See README for more info.',
+                                 'update-index'
+                                 # 'end-to-end'
+                                 ],
+                        # help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
+                        #      '"end-to-end".  See README for more info.',
+                        help='One of "chat-demo" or "update-index"',
                         default='chat-demo'
                         )
     args = parser.parse_args()
