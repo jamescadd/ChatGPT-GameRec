@@ -9,7 +9,7 @@ st.title("# 🕹️ Game recommendations")
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 if 'chatConversation' not in st.session_state:
-    vectorStoreFaiss = VectorStoreFaiss("./faiss_index")
+    vectorStoreFaiss = VectorStoreFaiss("./faiss_youtube")
     retriever = vectorStoreFaiss.get_retriever()
     st.session_state.chatConversation = ChatConversation(retriever)
 
