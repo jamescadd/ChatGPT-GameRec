@@ -157,7 +157,9 @@ def chat():
     # Initialize gpt-35-turbo and our embedding model
     # load the faiss vector store we saved into memory
     print("loading FAISS embeddings...")
-    vector_store = FAISS.load_local("./faiss_youtube", embeddings)
+    vector_store = FAISS.load_local("./faiss_youtube",
+                                    embeddings,
+                                    allow_dangerous_deserialization=True)
     print("Done loading embeddings....")
     # use the faiss vector store we saved to search the local document
     retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
@@ -203,14 +205,14 @@ def main():
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
 
     # Setup LangSmith if config.json contains 'langchain.langsmith_api_key'
-    if ("langchain" in config and ("langsmith_api_key" in config.get("langchain"))):
-        langsmith_api_key = config.get("langchain").get("langsmith_api_key")
-        if langsmith_api_key is not None:
-            os.environ["LANGCHAIN_TRACING_V2"] = "true"
-            os.environ["LANGCHAIN_PROJECT"] = "ChatGPT-GameRec"
-            os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-            os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
-            client = Client() # Initialize Langsmith
+    # if ("langchain" in config and ("langsmith_api_key" in config.get("langchain"))):
+    #     langsmith_api_key = config.get("langchain").get("langsmith_api_key")
+    #     if langsmith_api_key is not None:
+    #         os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    #         os.environ["LANGCHAIN_PROJECT"] = "ChatGPT-GameRec"
+    #         os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+    #         os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
+    #         client = Client() # Initialize Langsmith
 
     # if args.mode == "extract-transcripts":
     #     extract_transcripts(config)
