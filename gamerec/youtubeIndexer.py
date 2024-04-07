@@ -35,7 +35,7 @@ class YoutubeIndexer(object):
             index_flat = index_factory(dimensions, "Flat")
             self.vector_store = FAISS(self.embedding, index=index_flat, docstore=InMemoryDocstore(), index_to_docstore_id={})
         
-        with alive_bar(len(new_video_ids)) as bar:
+        with alive_bar(len(video_ids)) as bar:
             for video_id in video_ids: # TODO: Remove video_ids that the record_manager shows as already being indexed, or tell the record_manager not to worry about mutations
                 try:
                     loader = YoutubeLoader(video_id, continue_on_failure=True)
