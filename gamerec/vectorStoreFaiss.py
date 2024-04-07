@@ -16,7 +16,9 @@ class VectorStoreFaiss(object):
         # load the faiss vector store we saved into memory
         print("loading FAISS embeddings...")
         
-        vector_store = FAISS.load_local(self.folder_path, embeddings)
+        vector_store = FAISS.load_local(self.folder_path,
+                                        embeddings,
+                                        allow_dangerous_deserialization=True)
         print("Done loading embeddings....")
         # use the faiss vector store we saved to search the local document
         retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
