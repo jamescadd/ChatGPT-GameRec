@@ -9,9 +9,11 @@ from langchain.schema import (
     SystemMessage
 )
 
+from langchain_core.vectorstores import VectorStoreRetriever
+
 class ChatConversation(object):
 
-    def __init__(self, retriever: any): # TODO: Type retriever as VectorStoreRetriever
+    def __init__(self, retriever: VectorStoreRetriever):
         self.llm = ChatOpenAI()
 
         self.condense_question_prompt = PromptTemplate.from_template(
