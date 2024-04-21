@@ -3,6 +3,11 @@ A GPT-powered chatbot that suggests games you'll love
 
 ## Setup & Install
 
+### Services
+1. Create an OpenAI developer account
+ and acquire an API Key.
+2. Create a Pinecone account, optionally billing via Azure as described [here](https://docs.pinecone.io/guides/organizations/manage-billing/setting-up-billing-through-azure-marketplace).
+
 ### Install
 
 ```bash
@@ -55,7 +60,7 @@ Replace values from the template with your actual values:
 - YouTube Data API v3 Key
 - channel ID(s) (if desired)
 - OpenAI API Key
-- **[Optional]** LangSmith API Key (https://smith.langchain.com/settings)
+- Pinecone API Key
 
 **Note**: `channel_id` can be a single string for one channel ID, or a list
 of strings if you want to extract video transcripts from multiple channels.

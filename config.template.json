@@ -13,7 +13,7 @@
   "openai": {
     "api_key": "your_api_key"
   },
-  "langchain": {
-    "langsmith_api_key": "ls_your_api_key"
+  "pinecone": {
+    "api_key": "your_api_key"
   }
 }

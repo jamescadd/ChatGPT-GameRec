@@ -6,13 +6,14 @@ dependencies:
  - python=3.8.11
  - pip
  - pip:
-   - openai
    - alive-progress
-   - faiss-cpu
+   # - faiss-cpu
    - google-api-python-client
    - jq
-   - langchain
+   # - langchain
    - openai
+   - pinecone-client
+   - semantic-kernel
    - streamlit
    - tiktoken
    - youtube-transcript-api

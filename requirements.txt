@@ -1,10 +1,13 @@
 alive-progress
-faiss-cpu
+# faiss-cpu
 google-api-python-client
 jq
-langchain # Automatically installs langchain-community
-langchain-openai
-langsmith
+# langchain # Automatically installs langchain-community
+# langchain-openai
+# langsmith
+openai
+pinecone-client
+semantic-kernel
+streamlit
 tiktoken
 youtube-transcript-api
-streamlit

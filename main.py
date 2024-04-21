@@ -3,24 +3,36 @@
 import argparse
 import json
 import os
+import semantic_kernel.text.text_chunker
+import tiktoken
 from random import random
 
 from alive_progress import alive_bar
 from googleapiclient.discovery import build
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.document_loaders import JSONLoader
-from langchain_community.vectorstores import FAISS
-from langchain_core.messages import HumanMessage, SystemMessage
-from langsmith import Client
+# from langchain.chains import ConversationalRetrievalChain
+# from langchain.memory import ConversationBufferMemory
+# from langchain.prompts import PromptTemplate
+# from langchain_openai import ChatOpenAI
+# from langchain_openai import OpenAIEmbeddings
+# from langchain_community.document_loaders import JSONLoader
+# from langchain_community.vectorstores import FAISS
+# from langchain_core.messages import HumanMessage, SystemMessage
+# from langsmith import Client
+from openai import OpenAI
+from pinecone import Pinecone
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled as TranscriptsDisabledError, NoTranscriptFound
 
 from gamerec.video import Video
 from gamerec.youtubeIndexer import YoutubeIndexer
+
+EMBEDDING_MODEL = "text-embedding-3-small"
+GPT_MODEL = "gpt-3.5-turbo"
+
+def num_tokens(text: str, model: str = GPT_MODEL) -> int:
+    """Return the number of tokens in a string."""
+    encoding = tiktoken.encoding_for_model(model)
+    return len(encoding.encode(text))
 
 def get_channel_videos(config):
 
@@ -78,24 +90,23 @@ def get_captions_from_videos(videos, channel_id):
     return output_json
 
 
-def get_transcript_summary(transcript):
+def get_transcript_summary(transcript, client):
     """
     Get an LLM-generated summary given a video transcript
     """
-    chat_ = ChatOpenAI()
 
-    messages = [
-        SystemMessage(content="You are an assistant that provides summaries of video game reviews given a transcript "
-                              "of a video review for a particular video game."),
-        HumanMessage(content=f"Video game review transcript: {transcript}")
-    ]
+    completion = client.chat.completions.create(
+        model=GPT_MODEL,
+        messages=[
+            {"role": "system", "content": "You are an assistant that provides summaries of video game reviews given a transcript."},
+            {"role": "user", "content": f"Video game review transcript: {transcript}"}
+        ]
+    )
 
-    ai_message = chat_(messages)
-
-    return ai_message.content
+    return completion.choices[0].message
 
 
-def summary_demo():
+def summary_demo(client):
     with open(args.transcripts_file) as i:
         transcripts = json.load(i)
 
@@ -104,7 +115,7 @@ def summary_demo():
     for transcript in transcripts:
         videos.append(Video(transcript['url'], transcript['captions']))
 
-    output = get_transcript_summary(videos[int(random() * len(videos))].get_transcription())
+    output = get_transcript_summary(videos[int(random() * len(videos))].get_transcription(), client)
     print(f"LLM-generated summary:\n\n{output}")
 
 
@@ -117,6 +128,38 @@ def extract_transcripts(config):
 
     with open(args.transcripts_file, 'w') as o:
         json.dump(output_json, o, indent=2)
+
+def create_embeddings(transcripts_file, client):
+    """
+    Create embeddings for transcripts
+    """
+    with open(transcripts_file) as f:
+        transcripts = json.load(f)
+
+    max_tokens = 1600
+    embeddings = []
+    for transcript in transcripts:
+        transcript_joined = " ".join(str(n) for n in transcript["captions"])
+        chunks = semantic_kernel.text.text_chunker.split_plaintext_lines(transcript_joined, max_tokens)
+        response = client.embeddings.create(model=EMBEDDING_MODEL, input=chunks)
+        batch_embeddings = [e.embedding for e in response.data]
+        embeddings.extend(batch_embeddings)
+        # TODO: Correllate the chunks with the video url
+
+    # Pick a name for the new index
+    index_name = 'youtube-transcripts'
+
+    indexes = pinecone.list_indexes()
+    # Check whether the index with the same name already exists - if so, delete it
+    if index_name in pinecone.list_indexes():
+        pinecone.delete_index(index_name)
+
+    # Creates new index
+    pinecone.create_index(name=index_name, dimension=len(article_df['content_vector'][0]))
+    index = pinecone.Index(index_name=index_name)
+
+    # Confirm our index was created
+    pinecone.list_indexes()
 
 
 def create_and_save_faiss_embeddings():
@@ -192,9 +235,9 @@ def chat():
         if continue_chat:
             ask_question_with_context(qa, query, chat_history)
 
-def update_index(config):
-    indexer = YoutubeIndexer(config)
-    indexer.update()
+# def update_index(config):
+#     indexer = YoutubeIndexer(config)
+#     indexer.update()
 
 def main():
 
@@ -203,27 +246,21 @@ def main():
 
     # set OPENAI_API_KEY env variable for LangChain
     os.environ["OPENAI_API_KEY"] = config.get("openai").get("api_key")
+    client = OpenAI()
+    
+    os.environ["PINECONE_API_KEY"] = config.get("pinecone").get("api_key")
+    pc = Pinecone(api_key=config.get("pinecone").get("api_key"))
 
-    # Setup LangSmith if config.json contains 'langchain.langsmith_api_key'
-    # if ("langchain" in config and ("langsmith_api_key" in config.get("langchain"))):
-    #     langsmith_api_key = config.get("langchain").get("langsmith_api_key")
-    #     if langsmith_api_key is not None:
-    #         os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    #         os.environ["LANGCHAIN_PROJECT"] = "ChatGPT-GameRec"
-    #         os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-    #         os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
-    #         client = Client() # Initialize Langsmith
-
-    # if args.mode == "extract-transcripts":
-    #     extract_transcripts(config)
+    if args.mode == "extract-transcripts":
+        extract_transcripts(config)
 # 
-    # if args.mode == 'summary-demo':
-    #     assert os.path.exists(args.transcripts_file)
-    #     summary_demo()
+    if args.mode == 'summary-demo':
+        assert os.path.exists(args.transcripts_file)
+        summary_demo(client)
 # 
-    # if args.mode == 'create-embeddings':
-    #     assert os.path.exists(args.transcripts_file)
-    #     create_and_save_faiss_embeddings()
+    if args.mode == 'create-embeddings':
+        assert os.path.exists(args.transcripts_file)
+        create_embeddings(args.transcripts_file, client)
 
     if args.mode == "chat-demo":
         chat()
@@ -233,8 +270,8 @@ def main():
     #     create_and_save_faiss_embeddings()
     #     chat()
 
-    if args.mode == 'update-index':
-        update_index(config)
+    # if args.mode == 'update-index':
+    #     update_index(config)
 
     if 'OPENAI_API_KEY' in os.environ:
         os.environ.pop('OPENAI_API_KEY')
@@ -245,21 +282,22 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--config', metavar='config', type=str,
                         help='JSON config file, defaults to config.json',
                         default='config.json')
-    # parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
-    #                     help='JSON file containing video transcripts, defaults to transcripts.json',
-    #                     default='transcripts.json')
+    parser.add_argument('-tf', '--transcripts-file', metavar='transcripts_file', type=str,
+                        help='JSON file containing video transcripts, defaults to transcripts.json',
+                        default='transcripts.json')
     parser.add_argument('-m', '--mode',
-                        choices=[# 'extract-transcripts',
-                                 # 'create-embeddings',
+                        choices=['extract-transcripts',
+                                 'create-embeddings',
                                  # 'summary-demo',
                                  'chat-demo',
                                  'update-index'
                                  # 'end-to-end'
                                  ],
-                        # help='One of "extract-transcripts", "create-embeddings", "summary-demo", "chat-demo", or'
+                        # help='One of "summary-demo", "chat-demo", or'
                         #      '"end-to-end".  See README for more info.',
-                        help='One of "chat-demo" or "update-index"',
-                        default='chat-demo'
+                        # 20240414 - Removing update-index while removing langchain
+                        help='One of "extract-transcripts", "create-embeddings", or "chat-demo"',
+                        default='create-embeddings'
                         )
     args = parser.parse_args()
     main()
